@@ -1,0 +1,132 @@
+openapi: 3.0.0
+info:
+  title: Emobile API
+  description: API for Emobile
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api
+
+paths:
+  /ping:
+    get:
+      summary: Ping endpoint
+      responses:
+        204:
+          description: No content
+
+  /health:
+    get:
+      summary: Health endpoint
+      responses:
+        200:
+          description: OK
+
+  /group:
+    get:
+      summary: Get group information
+      parameters:
+        - in: query
+          name: group
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: Group information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        400:
+          description: Bad request
+        500:
+          description: Internal server error
+
+  /info:
+    get:
+      summary: Get information about a song
+      parameters:
+        - in: query
+          name: group
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: song
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: Song information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoDTOResponse'
+        400:
+          description: Bad request
+        500:
+          description: Internal server error
+
+  /song:
+    get:
+      summary: Get song information
+      parameters:
+        - in: query
+          name: group
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: song
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: Song information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoDTOResponse'
+        400:
+          description: Bad request
+        500:
+          description: Internal server error
+
+components:
+  schemas:
+    Group:
+      type: object
+      properties:
+        group_id:
+          type: string
+        group_name:
+          type: string
+
+    InfoDTOResponse:
+      type: object
+      properties:
+        song_name:
+          type: string
+        group_name:
+          type: string
+        release_date:
+          type: string
+
+    Song:
+      type: object
+      properties:
+        song_id:
+          type: string
+        group_id:
+          type: string
+        song_name:
+          type: string
+        release_date:
+          type: string
+        song_text:
+          type: string
+        link:
+          type: string

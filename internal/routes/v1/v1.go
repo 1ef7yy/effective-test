@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"bean/internal/view"
+	"emobile/internal/view"
 	"fmt"
 
 	"net/http"
@@ -21,8 +21,7 @@ func (v *Router) Api() http.Handler {
 	apimux := http.NewServeMux()
 
 	apimux.Handle("GET /ping", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "%s", "ok")
+		w.WriteHeader(http.StatusNoContent)
 	}))
 
 	apimux.Handle("GET /health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -1,8 +1,8 @@
 package routes
 
 import (
-	v1 "bean/internal/routes/v1"
-	"bean/internal/view"
+	v1 "emobile/internal/routes/v1"
+	"emobile/internal/view"
 	"net/http"
 )
 
