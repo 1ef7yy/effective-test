@@ -22,3 +22,12 @@ type SongPost struct {
 	SongText    string    `json:"song_text"`
 	Link        string    `json:"link"`
 }
+
+type SongDTO struct {
+	SongID      string    `json:"song_id"`
+	GroupID     string    `json:"group_id"`
+	SongName    string    `json:"song_name"`
+	ReleaseDate time.Time `json:"release_date"`
+	SongText    string    `json:"song_text"`
+	Link        string    `json:"link"`
+}

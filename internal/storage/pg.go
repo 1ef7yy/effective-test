@@ -42,64 +42,22 @@ func (pg *Postgres) Close() {
 	pg.DB.Close()
 }
 
-func (pg *Postgres) Info(ctx context.Context, song, group string) (models.InfoDTOResponse, error) {
+func (pg *Postgres) GetSong(group, song string) (models.Song, error) {
 
-	val, err := pg.DB.Query(ctx, "GET song_details FROM songs WHERE song_name = $1 AND group_name = $2", song, group)
+	val, err := pg.DB.Query(context.Background(), "SELECT * FROM songs WHERE group_id = $1 AND song_name = $2", group, song)
 
 	if err != nil {
-		return models.InfoDTOResponse{}, err
+		return models.Song{}, err
 	}
 
-	defer val.Close()
+	var Song models.Song
 
-	var info models.InfoDTOResponse
 	for val.Next() {
-		if err := val.Scan(&info); err != nil {
-			return models.InfoDTOResponse{}, err
+
+		if err := val.Scan(&Song.SongID, &Song.GroupID, &Song.ReleaseDate, &Song.SongName, &Song.SongText, &Song.Link); err != nil {
+			return models.Song{}, err
 		}
 	}
 
-	return info, nil
-
-}
-
-func (pg *Postgres) GetGroup(ctx context.Context, group string) (models.Group, error) {
-
-	val, err := pg.DB.Query(ctx, "SELECT group_id, group_name FROM groups WHERE group_name = $1 ORDER BY group_name", group)
-
-	if err != nil {
-		return models.Group{}, err
-	}
-
-	defer val.Close()
-
-	var info models.Group
-
-	for val.Next() {
-		if err := val.Scan(&info.GroupID, &info.GroupName); err != nil {
-			return models.Group{}, err
-		}
-	}
-
-	return info, nil
-}
-
-func (pg *Postgres) GetGroupSongs(ctx context.Context, group string, limit, offset int) ([]models.Song, error) {
-
-	val, err := pg.DB.Query(ctx, "SELECT song_name, release_date, song_text, link FROM songs WHERE group_name = $1 LIMIT $2 OFFSET $3 ORDER BY song_name, release_date", group, limit, offset)
-
-	if err != nil {
-		return []models.Song{}, err
-	}
-
-	defer val.Close()
-
-	var info []models.Song
-	for val.Next() {
-		if err := val.Scan(&info); err != nil {
-			return []models.Song{}, err
-		}
-	}
-
-	return info, nil
+	return Song, nil
 }

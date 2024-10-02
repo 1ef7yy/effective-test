@@ -12,5 +12,7 @@ func InitRouter(view view.View) *http.ServeMux {
 
 	mux.Handle("/api/", v1.Api())
 
+	mux.Handle("/api/songs/", v1.Songs())
+
 	return mux
 }

@@ -1,8 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS groups (
-    group_id UUID PRIMARY KEY,
+    group_id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     group_name TEXT NOT NULL
 );
 -- +goose StatementEnd

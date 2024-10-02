@@ -5,14 +5,12 @@ import (
 	"emobile/internal/models"
 	"emobile/internal/storage"
 	"emobile/pkg/logger"
-	"fmt"
 	"os"
+	"strings"
 )
 
 type Domain interface {
-	Info(group, song string) (models.InfoDTOResponse, error)
-	GetGroup(group string) (models.Group, error)
-	GetGroupSongs(group string, limit, offset int) ([]models.Song, error)
+	GetSong(group, song string, verse_offset, verse_limit int) (models.SongDTO, error)
 }
 
 type domain struct {
@@ -25,26 +23,27 @@ func NewDomain(log logger.Logger) Domain {
 	}
 }
 
-func (d *domain) Info(group, song string) (models.InfoDTOResponse, error) {
-	info, err := d.pg.Info(context.Background(), group, song)
+func (d *domain) GetSong(group, song string, verse_offset, verse_limit int) (models.SongDTO, error) {
+
+	Song, err := d.pg.GetSong(group, song)
 
 	if err != nil {
-		return models.InfoDTOResponse{}, err
+		return models.SongDTO{}, err
 	}
 
-	if info.ReleaseDate.IsZero() {
-		return models.InfoDTOResponse{}, fmt.Errorf("song %s from group %s not found", song, group)
-	}
+	var verses []string
 
-	return info, nil
-}
+	verses = strings.Split(Song.SongText, "\n\n")
 
-func (d *domain) GetGroup(group string) (models.Group, error) {
+	Song.SongText = strings.Join(verses[verse_offset:verse_offset+verse_limit], "\n\n")
 
-	return d.pg.GetGroup(context.Background(), group)
-}
+	return models.SongDTO{
+		SongID:      Song.SongID,
+		GroupID:     Song.GroupID,
+		SongName:    Song.SongName,
+		ReleaseDate: Song.ReleaseDate,
+		SongText:    Song.SongText,
+		Link:        Song.Link,
+	}, nil
 
-func (d *domain) GetGroupSongs(group string, limit, offset int) ([]models.Song, error) {
-
-	return d.pg.GetGroupSongs(context.Background(), group, limit, offset)
 }

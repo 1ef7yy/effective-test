@@ -11,7 +11,12 @@ import (
 
 func main() {
 	logger := logger.NewLogger(nil)
+
+	logger.Info("starting server...")
+
 	view := view.NewView(logger)
+
+	logger.Info("initializing router...")
 
 	mux := routes.InitRouter(view)
 
