@@ -16,7 +16,8 @@ type Domain interface {
 	GetAllSongs() ([]models.Song, error)
 	NewSong(data models.NewSongFormattedReq) (string, error)
 	NewGroup(data models.NewGroupReq) (string, error)
-	GetGroups() ([]models.Group, error)
+	GetAllGroups() ([]models.Group, error)
+	GetGroupSongs(group string) ([]models.Song, error)
 }
 
 type domain struct {
@@ -131,10 +132,19 @@ func (d *domain) NewGroup(data models.NewGroupReq) (string, error) {
 
 }
 
-func (d *domain) GetGroups() ([]models.Group, error) {
-	groups, err := d.pg.GetGroups()
+func (d *domain) GetAllGroups() ([]models.Group, error) {
+	groups, err := d.pg.GetAllGroups()
 	if err != nil {
 		return nil, errors.NewHTTPError(500, err.Error())
 	}
 	return groups, nil
+}
+
+func (d *domain) GetGroupSongs(group string) ([]models.Song, error) {
+
+	songs, err := d.pg.GetGroupSongs(group)
+	if err != nil {
+		return nil, errors.NewHTTPError(500, err.Error())
+	}
+	return songs, nil
 }

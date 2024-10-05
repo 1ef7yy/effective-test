@@ -1,132 +1,116 @@
 openapi: 3.0.0
 info:
-  title: Emobile API
-  description: API for Emobile
+  title: Effective mobile API
+  description: API for Effective mobile test project
   version: 1.0.0
 
 servers:
-  - url: http://localhost:8080/api
+  - url: http://localhost:8080
+    description: Local development server
 
 paths:
-  /ping:
+  /api/songs:
     get:
-      summary: Ping endpoint
-      responses:
-        204:
-          description: No content
-
-  /health:
-    get:
-      summary: Health endpoint
+      summary: Get all songs
       responses:
         200:
-          description: OK
+          description: List of songs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Song'
 
-  /group:
+  /api/songs/{song_id}:
     get:
-      summary: Get group information
+      summary: Get a song by ID
       parameters:
-        - in: query
-          name: group
-          schema:
-            type: string
+        - in: path
+          name: song_id
           required: true
+          schema:
+            type: integer
       responses:
         200:
-          description: Group information
+          description: Song details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Song'
+
+  /api/groups:
+    get:
+      summary: Get all groups
+      responses:
+        200:
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+
+  /api/groups/{group_id}:
+    get:
+      summary: Get a group by ID
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Group details
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
-        400:
-          description: Bad request
-        500:
-          description: Internal server error
 
-  /info:
+  /api/groups/{group_id}/songs:
     get:
-      summary: Get information about a song
+      summary: Get songs for a group
       parameters:
-        - in: query
-          name: group
-          schema:
-            type: string
+        - in: path
+          name: group_id
           required: true
-        - in: query
-          name: song
           schema:
-            type: string
-          required: true
+            type: integer
       responses:
         200:
-          description: Song information
+          description: List of songs for the group
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InfoDTOResponse'
-        400:
-          description: Bad request
-        500:
-          description: Internal server error
-
-  /song:
-    get:
-      summary: Get song information
-      parameters:
-        - in: query
-          name: group
-          schema:
-            type: string
-          required: true
-        - in: query
-          name: song
-          schema:
-            type: string
-          required: true
-      responses:
-        200:
-          description: Song information
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InfoDTOResponse'
-        400:
-          description: Bad request
-        500:
-          description: Internal server error
+                type: array
+                items:
+                  $ref: '#/components/schemas/Song'
 
 components:
   schemas:
-    Group:
-      type: object
-      properties:
-        group_id:
-          type: string
-        group_name:
-          type: string
-
-    InfoDTOResponse:
-      type: object
-      properties:
-        song_name:
-          type: string
-        group_name:
-          type: string
-        release_date:
-          type: string
-
     Song:
       type: object
       properties:
         song_id:
-          type: string
+          type: integer
         group_id:
-          type: string
-        song_name:
-          type: string
+          type: integer
         release_date:
+          type: string
+          format: date
+        song_name:
           type: string
         song_text:
           type: string
         link:
+          type: string
+
+    Group:
+      type: object
+      properties:
+        group_id:
+          type: integer
+        group_name:
           type: string

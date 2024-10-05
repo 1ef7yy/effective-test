@@ -19,7 +19,7 @@ type View interface {
 	GetAllSongs(log logger.Logger, w http.ResponseWriter, r *http.Request)
 	NewGroup(log logger.Logger, w http.ResponseWriter, r *http.Request)
 	GetGroupSongs(log logger.Logger, w http.ResponseWriter, r *http.Request)
-	GetGroups(log logger.Logger, w http.ResponseWriter, r *http.Request)
+	GetAllGroups(log logger.Logger, w http.ResponseWriter, r *http.Request)
 }
 
 type view struct {
@@ -189,11 +189,39 @@ func (v *view) NewGroup(log logger.Logger, w http.ResponseWriter, r *http.Reques
 }
 
 func (v *view) GetGroupSongs(log logger.Logger, w http.ResponseWriter, r *http.Request) {
+	group := r.URL.Query().Get("group_name")
+
+	if group == "" {
+		log.Error("Bad request, missing group")
+		httpResponse := errors.NewHTTPError(400, "Bad request, missing group")
+		w.WriteHeader(httpResponse.Code)
+		fmt.Fprintf(w, httpResponse.Msg)
+		return
+	}
+
+	songs, err := v.domain.GetGroupSongs(group)
+
+	if err != nil {
+		log.Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(songs)
+	if err != nil {
+		log.Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
-func (v *view) GetGroups(log logger.Logger, w http.ResponseWriter, r *http.Request) {
+func (v *view) GetAllGroups(log logger.Logger, w http.ResponseWriter, r *http.Request) {
 
-	groups, err := v.domain.GetGroups()
+	groups, err := v.domain.GetAllGroups()
 	if err != nil {
 		log.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

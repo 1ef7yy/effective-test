@@ -5,6 +5,7 @@ import (
 	"emobile/internal/errors"
 	"emobile/internal/models"
 	"emobile/pkg/logger"
+	"fmt"
 	"sync"
 	"time"
 
@@ -47,30 +48,48 @@ func (pg *Postgres) Close() {
 
 func (pg *Postgres) GetAllSongs() ([]models.Song, error) {
 
-	val, err := pg.DB.Query(context.Background(), "SELECT * FROM songs")
+	val, err := pg.DB.Query(context.Background(), "SELECT song_id, group_id, release_date::text, song_name, song_text, link FROM songs")
+
+	fmt.Println("1")
 
 	if err != nil {
 		pg.Log.Error(err.Error())
 		return nil, err
 	}
 
-	if val.RawValues() == nil {
-		return nil, errors.NewHTTPError(404, "Not found")
-	}
+	fmt.Println("2")
 
 	defer val.Close()
 
 	var songs []models.Song
 
+	fmt.Println("3")
+
 	for val.Next() {
 		var song models.Song
 
-		if err := val.Scan(&song.SongID, &song.GroupID, &song.ReleaseDate, &song.SongName, &song.SongText, &song.Link); err != nil {
+		var release_date string
+
+		if err := val.Scan(&song.SongID, &song.GroupID, &release_date, &song.SongName, &song.SongText, &song.Link); err != nil {
 			pg.Log.Error(err.Error())
 			return nil, err
 		}
 
+		fmt.Println("4")
+
+		song.ReleaseDate, err = time.Parse("2006-01-02", release_date)
+
+		if err != nil {
+			pg.Log.Error(err.Error())
+		}
+
 		songs = append(songs, song)
+	}
+
+	fmt.Println("5")
+
+	if len(songs) == 0 {
+		return nil, errors.NewHTTPError(404, "Not found")
 	}
 
 	return songs, nil
@@ -183,7 +202,7 @@ func (pg *Postgres) NewGroup(ctx context.Context, data models.NewGroupReq) (stri
 	return groupID, nil
 }
 
-func (pg *Postgres) GetGroups() ([]models.Group, error) {
+func (pg *Postgres) GetAllGroups() ([]models.Group, error) {
 	val, err := pg.DB.Query(context.Background(), "SELECT * FROM groups")
 
 	if err != nil {
@@ -205,4 +224,41 @@ func (pg *Postgres) GetGroups() ([]models.Group, error) {
 	}
 
 	return groups, nil
+}
+
+func (pg *Postgres) GetGroupSongs(group_name string) ([]models.Song, error) {
+
+	groupID, err := pg.GetGroupID(group_name)
+
+	val, err := pg.DB.Query(context.Background(), "SELECT song_id, group_id, release_date::text, song_name, song_text, link FROM songs WHERE group_id = $1", groupID)
+
+	if err != nil {
+		pg.Log.Error(err.Error())
+		return nil, err
+	}
+
+	var songs []models.Song
+
+	for val.Next() {
+
+		var song models.Song
+		var release_date string
+
+		if err := val.Scan(&song.SongID, &song.GroupID, &release_date, &song.SongName, &song.SongText, &song.Link); err != nil {
+			pg.Log.Error(err.Error())
+			return nil, err
+		}
+
+		song.ReleaseDate, err = time.Parse("2006-01-02", release_date)
+
+		if err != nil {
+			pg.Log.Error(err.Error())
+			return nil, err
+		}
+
+		songs = append(songs, song)
+	}
+
+	return songs, nil
+
 }
