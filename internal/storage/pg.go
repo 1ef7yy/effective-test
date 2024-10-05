@@ -2,11 +2,13 @@ package storage
 
 import (
 	"context"
+	"emobile/internal/errors"
 	"emobile/internal/models"
 	"emobile/pkg/logger"
-	"fmt"
 	"sync"
+	"time"
 
+	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -43,54 +45,94 @@ func (pg *Postgres) Close() {
 	pg.DB.Close()
 }
 
-func (pg *Postgres) GetSong(group_name, song string) (models.Song, error) {
+func (pg *Postgres) GetAllSongs() ([]models.Song, error) {
+
+	val, err := pg.DB.Query(context.Background(), "SELECT * FROM songs")
+
+	if err != nil {
+		pg.Log.Error(err.Error())
+		return nil, err
+	}
+
+	if val.RawValues() == nil {
+		return nil, errors.NewHTTPError(404, "Not found")
+	}
+
+	defer val.Close()
+
+	var songs []models.Song
+
+	for val.Next() {
+		var song models.Song
+
+		if err := val.Scan(&song.SongID, &song.GroupID, &song.ReleaseDate, &song.SongName, &song.SongText, &song.Link); err != nil {
+			pg.Log.Error(err.Error())
+			return nil, err
+		}
+
+		songs = append(songs, song)
+	}
+
+	return songs, nil
+}
+
+func (pg *Postgres) GetSong(group_name, song string) (models.SongDB, error) {
 
 	group_id, err := pg.GetGroupID(group_name)
 
-	fmt.Printf("Group id: %s\n", group_id)
+	if err != nil {
+		pg.Log.Error(err.Error())
+		return models.SongDB{}, err
+	}
+
+	var Song models.SongDB
+	var release_date string
+
+	err = pg.DB.QueryRow(context.Background(), "SELECT song_id, group_id, release_date::text, song_name, song_text, link FROM songs WHERE group_id = $1 AND song_name = $2", group_id, song).Scan(&Song.SongID, &Song.GroupID, &release_date, &Song.SongName, &Song.SongText, &Song.Link)
 
 	if err != nil {
 		pg.Log.Error(err.Error())
-		return models.Song{}, err
+		return models.SongDB{}, err
 	}
 
-	val, err := pg.DB.Query(context.Background(), "SELECT * FROM songs WHERE group_id = $1 AND song_name = $2", group_id, song)
+	if Song.SongID == "" {
+		return models.SongDB{}, errors.NewHTTPError(404, "Not found")
+	}
+
+	Song.ReleaseDate, err = time.Parse("2006-01-02", release_date)
 
 	if err != nil {
 		pg.Log.Error(err.Error())
-		return models.Song{}, err
-	}
-
-	var Song models.Song
-
-	for val.Next() {
-
-		if err := val.Scan(&Song.SongID, &Song.GroupID, &Song.ReleaseDate, &Song.SongName, &Song.SongText, &Song.Link); err != nil {
-			pg.Log.Error(err.Error())
-			return models.Song{}, err
-		}
+		return models.SongDB{}, err
 	}
 
 	return Song, nil
 }
-
 func (pg *Postgres) GetGroupID(groupName string) (string, error) {
+
+	if groupName == "" {
+		return "", errors.NewHTTPError(400, "Bad request, missing group name")
+	}
 
 	var groupID string
 	err := pg.DB.QueryRow(context.Background(), "SELECT group_id FROM groups WHERE group_name = $1", groupName).Scan(&groupID)
 
 	if err != nil {
 		pg.Log.Error(err.Error())
+		if err == pgx.ErrNoRows {
+			return "", errors.NewHTTPError(404, "Not found")
+		}
 		return "", err
 	}
 
-	return groupID, nil
+	if groupID == "" {
+		return "", errors.NewHTTPError(404, "Not found")
+	}
 
+	return groupID, nil
 }
 
 func (pg *Postgres) NewSong(data models.NewSongReq) (string, error) {
-
-	fmt.Printf("Data pg: %v\n", data)
 
 	var group_id string
 
@@ -109,11 +151,9 @@ func (pg *Postgres) NewSong(data models.NewSongReq) (string, error) {
 		return "", err
 	}
 
-	if err != nil {
-		pg.Log.Error(err.Error())
-		return "", err
+	if songID == "" {
+		return "", errors.NewHTTPError(500, "Internal server error")
 	}
-
 	return songID, nil
 
 }

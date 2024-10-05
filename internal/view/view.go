@@ -9,15 +9,17 @@ import (
 	"time"
 
 	"emobile/internal/domain"
+	"emobile/internal/errors"
 	"emobile/internal/models"
 )
 
 type View interface {
 	GetSong(log logger.Logger, w http.ResponseWriter, r *http.Request)
 	NewSong(log logger.Logger, w http.ResponseWriter, r *http.Request)
+	GetAllSongs(log logger.Logger, w http.ResponseWriter, r *http.Request)
 	NewGroup(log logger.Logger, w http.ResponseWriter, r *http.Request)
-	GetGroupSongs(logger.Logger, http.ResponseWriter, *http.Request)
-	GetGroups(logger.Logger, http.ResponseWriter, *http.Request)
+	GetGroupSongs(log logger.Logger, w http.ResponseWriter, r *http.Request)
+	GetGroups(log logger.Logger, w http.ResponseWriter, r *http.Request)
 }
 
 type view struct {
@@ -40,8 +42,9 @@ func (v *view) GetSong(log logger.Logger, w http.ResponseWriter, r *http.Request
 
 	if err != nil {
 		log.Error(err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Bad request, missing verse offset or write a number")
+		httpResponse := errors.NewHTTPError(400, "Bad request, missing verse offset or write a number")
+		w.WriteHeader(httpResponse.Code)
+		fmt.Fprintf(w, httpResponse.Msg)
 		return
 	}
 
@@ -49,33 +52,23 @@ func (v *view) GetSong(log logger.Logger, w http.ResponseWriter, r *http.Request
 
 	if err != nil {
 		log.Error(err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Bad request, missing verse limit or write a number")
+		httpResponse := errors.NewHTTPError(400, "Bad request, missing verse limit or write a number")
+		w.WriteHeader(httpResponse.Code)
+		fmt.Fprintf(w, httpResponse.Msg)
 		return
 	}
 
 	if group == "" || song == "" {
 		log.Error(err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Bad request, missing group or song")
+		httpResponse := errors.NewHTTPError(400, "Bad request, missing group or song")
+		w.WriteHeader(httpResponse.Code)
+		fmt.Fprintf(w, httpResponse.Msg)
 		return
 	}
 
-	info, err := v.domain.GetSong(group, song, verse_offset, verse_limit)
-	if err != nil {
-		log.Error(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	Song, err := v.domain.GetSong(group, song, verse_offset, verse_limit)
 
-	data, err := json.Marshal(info)
-	if err != nil {
-		log.Error(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	Song, err := v.domain.GetSong(group, song, verse_limit, verse_offset)
+	fmt.Printf("Song: %v\n", Song)
 
 	if err != nil {
 		log.Error(err.Error())
@@ -83,17 +76,38 @@ func (v *view) GetSong(log logger.Logger, w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	data, err = json.Marshal(Song)
+	data, err := json.Marshal(Song)
 	if err != nil {
 		log.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Error(err.Error())
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+func (v *view) GetAllSongs(log logger.Logger, w http.ResponseWriter, r *http.Request) {
+
+	songs, err := v.domain.GetAllSongs()
+	if err != nil {
+		log.Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(songs)
+	if err != nil {
+		log.Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+
 }
 
 func (v *view) NewSong(log logger.Logger, w http.ResponseWriter, r *http.Request) {
@@ -109,8 +123,8 @@ func (v *view) NewSong(log logger.Logger, w http.ResponseWriter, r *http.Request
 
 	if data.GroupName == "" || data.SongName == "" || data.SongText == "" || data.Link == "" || data.ReleaseDate == "" {
 		log.Error("Bad request, missing required field(s)")
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Bad request, missing required field(s)")
+		httpResponse := errors.NewHTTPError(400, "Bad request, missing required field(s)")
+		w.WriteHeader(httpResponse.Code)
 		return
 	}
 
@@ -140,7 +154,7 @@ func (v *view) NewSong(log logger.Logger, w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Add("Location", fmt.Sprintf("%s", songID))
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 
 }
 
@@ -155,7 +169,9 @@ func (v *view) NewGroup(log logger.Logger, w http.ResponseWriter, r *http.Reques
 
 	if data.GroupName == "" {
 		log.Error("Bad request, missing required field(s)")
-		w.WriteHeader(http.StatusBadRequest)
+		httpResponse := errors.NewHTTPError(400, "Bad request, missing required field(s)")
+		w.WriteHeader(httpResponse.Code)
+		fmt.Fprintf(w, httpResponse.Msg)
 		return
 	}
 

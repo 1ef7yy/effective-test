@@ -10,6 +10,10 @@ func (v *Router) Songs() http.Handler {
 
 	log := logger.NewLogger(nil)
 
+	apimux.Handle("GET /songs", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		v.View.GetAllSongs(log, w, r)
+	}))
+
 	apimux.Handle("GET /song", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		v.View.GetSong(log, w, r)
 	}))

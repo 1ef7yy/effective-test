@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"emobile/internal/errors"
 	"emobile/internal/models"
 	"emobile/internal/storage"
 	"emobile/pkg/logger"
@@ -12,6 +13,7 @@ import (
 
 type Domain interface {
 	GetSong(group, song string, verse_offset, verse_limit int) (models.SongDTO, error)
+	GetAllSongs() ([]models.Song, error)
 	NewSong(data models.NewSongFormattedReq) (string, error)
 	NewGroup(data models.NewGroupReq) (string, error)
 	GetGroups() ([]models.Group, error)
@@ -53,23 +55,39 @@ func (d *domain) GetSong(group, song string, verse_offset, verse_limit int) (mod
 	Song, err := d.pg.GetSong(group, song)
 
 	if err != nil {
-		return models.SongDTO{}, err
+		d.pg.Log.Error(err.Error())
+		return models.SongDTO{}, errors.NewHTTPError(500, err.Error())
 	}
 
 	var verses []string
 
 	verses = strings.Split(Song.SongText, "\n\n")
 
-	Song.SongText = strings.Join(verses[verse_offset:verse_offset+verse_limit], "\n\n")
+	if verse_limit > len(verses)-verse_offset {
+		return models.SongDTO{}, errors.NewHTTPError(400, "Bad request, verse_offset or limit out of bounds")
+	}
 
 	return models.SongDTO{
 		SongID:      Song.SongID,
 		GroupID:     Song.GroupID,
 		SongName:    Song.SongName,
 		ReleaseDate: Song.ReleaseDate,
-		SongText:    Song.SongText,
+		SongText:    strings.Join(verses[verse_offset:verse_offset+verse_limit], "\n\n"),
 		Link:        Song.Link,
 	}, nil
+
+}
+
+func (d *domain) GetAllSongs() ([]models.Song, error) {
+
+	songs, err := d.pg.GetAllSongs()
+
+	if err != nil {
+		d.pg.Log.Error(err.Error())
+		return nil, errors.NewHTTPError(500, err.Error())
+	}
+
+	return songs, nil
 
 }
 
@@ -78,7 +96,7 @@ func (d *domain) NewSong(data models.NewSongFormattedReq) (string, error) {
 	fmt.Printf("Data domain: %v\n", data)
 
 	if data.GroupName == "" || data.SongName == "" || data.SongText == "" || data.Link == "" || data.ReleaseDate.IsZero() {
-		return "", fmt.Errorf("bad request, missing required field(s)")
+		return "", errors.NewHTTPError(400, "Bad request, missing required field(s)")
 	}
 
 	SongReq := models.NewSongReq{
@@ -92,7 +110,8 @@ func (d *domain) NewSong(data models.NewSongFormattedReq) (string, error) {
 	id, err := d.pg.NewSong(SongReq)
 
 	if err != nil {
-		return "", err
+		d.pg.Log.Error(err.Error())
+		return "", errors.NewHTTPError(500, err.Error())
 	}
 
 	return id, nil
@@ -105,7 +124,7 @@ func (d *domain) NewGroup(data models.NewGroupReq) (string, error) {
 
 	if err != nil {
 		d.pg.Log.Error(err.Error())
-		return "", err
+		return "", errors.NewHTTPError(500, err.Error())
 	}
 
 	return groupID, nil
@@ -115,7 +134,7 @@ func (d *domain) NewGroup(data models.NewGroupReq) (string, error) {
 func (d *domain) GetGroups() ([]models.Group, error) {
 	groups, err := d.pg.GetGroups()
 	if err != nil {
-		return nil, err
+		return nil, errors.NewHTTPError(500, err.Error())
 	}
 	return groups, nil
 }

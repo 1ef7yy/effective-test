@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-ALTER TABLE songs ADD CONSTRAINT songs_group_name_fkey FOREIGN KEY (group_name) REFERENCES groups(group_name) ON DELETE RESTRICT;
+ALTER TABLE songs ADD CONSTRAINT songs_group_name_fkey FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE RESTRICT;
 -- +goose StatementEnd
 
 -- +goose Down
