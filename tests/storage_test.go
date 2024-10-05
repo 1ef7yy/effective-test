@@ -4,14 +4,13 @@ import (
 	"context"
 	"emobile/internal/storage"
 	"emobile/pkg/logger"
-	"os"
 	"testing"
 )
 
 func TestPostgresPing(t *testing.T) {
 	log := logger.NewLogger(nil)
-	pg := storage.NewPostgres(context.Background(), os.Getenv("POSTGRES_DSN"), log)
-
+	conn := "postgres://postgres:postgres@127.0.0.1:5432/library?sslmode=disable"
+	pg := storage.NewPostgres(context.Background(), conn, log)
 	if err := pg.Ping(context.Background()); err != nil {
 		t.Fatal(err)
 	}

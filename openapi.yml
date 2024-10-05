@@ -1,0 +1,116 @@
+openapi: 3.0.0
+info:
+  title: Effective mobile API
+  description: API for Effective mobile test project
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /api/songs:
+    get:
+      summary: Get all songs
+      responses:
+        200:
+          description: List of songs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Song'
+
+  /api/songs/{song_id}:
+    get:
+      summary: Get a song by ID
+      parameters:
+        - in: path
+          name: song_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Song details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Song'
+
+  /api/groups:
+    get:
+      summary: Get all groups
+      responses:
+        200:
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+
+  /api/groups/{group_id}:
+    get:
+      summary: Get a group by ID
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+
+  /api/groups/{group_id}/songs:
+    get:
+      summary: Get songs for a group
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: List of songs for the group
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Song'
+
+components:
+  schemas:
+    Song:
+      type: object
+      properties:
+        song_id:
+          type: integer
+        group_id:
+          type: integer
+        release_date:
+          type: string
+          format: date
+        song_name:
+          type: string
+        song_text:
+          type: string
+        link:
+          type: string
+
+    Group:
+      type: object
+      properties:
+        group_id:
+          type: integer
+        group_name:
+          type: string
