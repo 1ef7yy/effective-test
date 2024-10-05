@@ -5,16 +5,21 @@ import (
 	"emobile/internal/models"
 	"emobile/internal/storage"
 	"emobile/pkg/logger"
+	"fmt"
 	"os"
 	"strings"
 )
 
 type Domain interface {
 	GetSong(group, song string, verse_offset, verse_limit int) (models.SongDTO, error)
+	NewSong(data models.NewSongFormattedReq) (string, error)
+	NewGroup(data models.NewGroupReq) (string, error)
+	GetGroups() ([]models.Group, error)
 }
 
 type domain struct {
-	pg storage.Postgres
+	pg    storage.Postgres
+	redis storage.Redis
 }
 
 func NewDomain(log logger.Logger) Domain {
@@ -24,6 +29,26 @@ func NewDomain(log logger.Logger) Domain {
 }
 
 func (d *domain) GetSong(group, song string, verse_offset, verse_limit int) (models.SongDTO, error) {
+
+	// cached_song, err := d.redis.GetSong(group, song)
+
+	// if err != nil {
+	// 	return models.SongDTO{}, err
+	// }
+
+	// if cached_song.SongID != "" {
+
+	// 	Song := models.SongDTO{
+	// 		SongID:      cached_song.SongID,
+	// 		GroupID:     cached_song.GroupID,
+	// 		SongName:    cached_song.SongName,
+	// 		ReleaseDate: cached_song.ReleaseDate,
+	// 		SongText:    cached_song.SongText,
+	// 		Link:        cached_song.Link,
+	// 	}
+
+	// 	return Song, nil
+	// }
 
 	Song, err := d.pg.GetSong(group, song)
 
@@ -46,4 +71,51 @@ func (d *domain) GetSong(group, song string, verse_offset, verse_limit int) (mod
 		Link:        Song.Link,
 	}, nil
 
+}
+
+func (d *domain) NewSong(data models.NewSongFormattedReq) (string, error) {
+
+	fmt.Printf("Data domain: %v\n", data)
+
+	if data.GroupName == "" || data.SongName == "" || data.SongText == "" || data.Link == "" || data.ReleaseDate.IsZero() {
+		return "", fmt.Errorf("bad request, missing required field(s)")
+	}
+
+	SongReq := models.NewSongReq{
+		GroupName:   data.GroupName,
+		SongName:    data.SongName,
+		ReleaseDate: data.ReleaseDate.Format("2006-01-02"),
+		SongText:    data.SongText,
+		Link:        data.Link,
+	}
+
+	id, err := d.pg.NewSong(SongReq)
+
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
+
+}
+
+func (d *domain) NewGroup(data models.NewGroupReq) (string, error) {
+
+	groupID, err := d.pg.NewGroup(context.Background(), data)
+
+	if err != nil {
+		d.pg.Log.Error(err.Error())
+		return "", err
+	}
+
+	return groupID, nil
+
+}
+
+func (d *domain) GetGroups() ([]models.Group, error) {
+	groups, err := d.pg.GetGroups()
+	if err != nil {
+		return nil, err
+	}
+	return groups, nil
 }

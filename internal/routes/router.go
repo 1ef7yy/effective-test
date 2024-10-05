@@ -14,5 +14,7 @@ func InitRouter(view view.View) *http.ServeMux {
 
 	mux.Handle("/api/songs/", v1.Songs())
 
+	mux.Handle("/api/groups/", v1.Groups())
+
 	return mux
 }
