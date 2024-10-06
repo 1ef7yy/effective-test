@@ -25,11 +25,24 @@ type SongDTO struct {
 }
 
 type NewSongReq struct {
-	GroupName   string `json:"group_name"`
-	SongName    string `json:"song_name"`
+	GroupName   string `json:"group"`
+	SongName    string `json:"song"`
 	ReleaseDate string `json:"release_date"`
 	SongText    string `json:"song_text"`
 	Link        string `json:"link"`
+}
+
+type EditSongReq struct {
+	GroupName   string    `json:"group_name"`
+	SongName    string    `json:"song_name"`
+	ReleaseDate time.Time `json:"release_date"`
+	SongText    string    `json:"song_text"`
+	Link        string    `json:"link"`
+}
+
+type DeleteSongReq struct {
+	SongName  string `json:"song_name"`
+	GroupName string `json:"group_name"`
 }
 
 type NewSongFormattedReq struct {

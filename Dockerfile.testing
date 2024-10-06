@@ -1,0 +1,7 @@
+FROM golang:alpine
+
+WORKDIR /tests
+
+COPY ./tests /tests
+
+ENTRYPOINT ["go", "test", "-v", "."]

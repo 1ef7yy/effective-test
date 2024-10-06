@@ -23,5 +23,9 @@ func (v *Router) Groups() http.Handler {
 	apimux.Handle("POST /new_group", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		v.View.NewGroup(log, w, r)
 	}))
+
+	apimux.Handle("POST /edit_group", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		v.View.EditGroup(log, w, r)
+	}))
 	return http.StripPrefix("/api/groups", apimux)
 }

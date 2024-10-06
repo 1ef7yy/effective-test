@@ -19,8 +19,11 @@ func (v *Router) Songs() http.Handler {
 	}))
 
 	apimux.Handle("POST /new_song", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		v.View.NewSong(log, w, r)
+	}))
+
+	apimux.Handle("POST /edit_song", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		v.View.EditSong(log, w, r)
 	}))
 
 	return http.StripPrefix("/api/songs", apimux)
