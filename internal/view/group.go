@@ -43,8 +43,8 @@ func (v *view) GetGroupSongs(log logger.Logger, w http.ResponseWriter, r *http.R
 	group := r.URL.Query().Get("group_name")
 
 	if group == "" {
-		log.Error("Bad request, missing group")
 		httpResponse := errors.NewHTTPError(400, "Bad request, missing group")
+		log.Error(httpResponse.Error())
 		w.WriteHeader(httpResponse.Code)
 		fmt.Fprintf(w, httpResponse.Msg)
 		return
@@ -54,7 +54,7 @@ func (v *view) GetGroupSongs(log logger.Logger, w http.ResponseWriter, r *http.R
 
 	if apierr != nil {
 		log.Error(apierr.Error())
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(apierr.Status())
 		return
 	}
 

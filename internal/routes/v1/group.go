@@ -9,10 +9,7 @@ func (v *Router) Groups() http.Handler {
 	apimux := http.NewServeMux()
 	log := logger.NewLogger(nil)
 
-	// root/api/groups
-	// body: { "group_name": "group_name" }
-	// returning: uuid of requested group
-	apimux.Handle("GET /", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	apimux.Handle("GET /all", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		v.View.GetAllGroups(log, w, r)
 	}))
 
@@ -24,8 +21,5 @@ func (v *Router) Groups() http.Handler {
 		v.View.NewGroup(log, w, r)
 	}))
 
-	apimux.Handle("POST /edit_group", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		v.View.EditGroup(log, w, r)
-	}))
 	return http.StripPrefix("/api/groups", apimux)
 }

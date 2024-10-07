@@ -3,7 +3,6 @@ package domain
 import (
 	"emobile/internal/errors"
 	"emobile/internal/models"
-	"fmt"
 	"strings"
 )
 
@@ -32,7 +31,7 @@ func (d *domain) GetSong(group, song string, verse_offset, verse_limit int) (mod
 	Song, err := d.pg.GetSong(group, song)
 
 	if err != nil {
-		d.pg.Log.Error(err.Error())
+		d.log.Error(err.Error())
 		return models.SongDTO{}, errors.NewHTTPError(500, err.Error())
 	}
 
@@ -64,7 +63,7 @@ func (d *domain) GetAllSongs() ([]models.Song, errors.APIError) {
 	songs, err := d.pg.GetAllSongs()
 
 	if err != nil {
-		d.pg.Log.Error(err.Error())
+		d.log.Error(err.Error())
 		return nil, errors.NewHTTPError(500, err.Error())
 	}
 
@@ -76,26 +75,16 @@ func (d *domain) GetAllSongs() ([]models.Song, errors.APIError) {
 
 }
 
-func (d *domain) NewSong(data models.NewSongFormattedReq) (string, errors.APIError) {
+func (d *domain) NewSong(data models.NewSongReq) (string, errors.APIError) {
 
-	fmt.Printf("Data domain: %v\n", data)
-
-	if data.GroupName == "" || data.SongName == "" || data.SongText == "" || data.Link == "" || data.ReleaseDate.IsZero() {
+	if !data.IsValid() {
 		return "", errors.NewHTTPError(400, "Bad request, missing required field(s)")
 	}
 
-	SongReq := models.NewSongReq{
-		GroupName:   data.GroupName,
-		SongName:    data.SongName,
-		ReleaseDate: data.ReleaseDate.Format("2006-01-02"),
-		SongText:    data.SongText,
-		Link:        data.Link,
-	}
-
-	id, err := d.pg.NewSong(SongReq)
+	id, err := d.pg.NewSong(data)
 
 	if err != nil {
-		d.pg.Log.Error(err.Error())
+		d.log.Error(err.Error())
 		return "", errors.NewHTTPError(500, err.Error())
 	}
 
@@ -107,31 +96,27 @@ func (d *domain) NewSong(data models.NewSongFormattedReq) (string, errors.APIErr
 
 }
 
-func (d *domain) EditSong(data models.EditSongReq) errors.APIError {
+func (d *domain) EditSong(data models.EditSongReq) (string, errors.APIError) {
 
 	songID, err := d.pg.EditSong(data)
 
 	if err != nil {
-		d.pg.Log.Error(err.Error())
-		return errors.NewHTTPError(500, err.Error())
+		d.log.Error(err.Error())
+		return "", errors.NewHTTPError(500, err.Error())
 	}
 
 	if songID == "" {
-		return errors.NewHTTPError(404, "Not found")
+		return "", errors.NewHTTPError(404, "Not found")
 	}
 
-	return nil
+	return songID, nil
 }
 
 func (d *domain) DeleteSong(data models.DeleteSongReq) (string, errors.APIError) {
 	songID, err := d.pg.DeleteSong(data)
 
-	if songID != "" {
-		return "", errors.NewHTTPError(404, "Not found")
-	}
-
 	if err != nil {
-		d.pg.Log.Error(err.Error())
+		d.log.Error(err.Error())
 		return "", errors.NewHTTPError(500, err.Error())
 	}
 	return songID, nil

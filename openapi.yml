@@ -5,11 +5,11 @@ info:
   version: 1.0.0
 
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8080/api
     description: Local development server
 
 paths:
-  /api/songs:
+  /songs/all:
     get:
       summary: Get all songs
       responses:
@@ -22,15 +22,32 @@ paths:
                 items:
                   $ref: '#/components/schemas/Song'
 
-  /api/songs/{song_id}:
+  /songs/get_song:
     get:
-      summary: Get a song by ID
+      summary: Get a song by name
       parameters:
-        - in: path
-          name: song_id
+        - in: query
+          name: song_name
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: group_name
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: verse_offset
           required: true
           schema:
             type: integer
+        - in: query
+          name: verse_limit
+          required: true
+          schema:
+            type: integer
+        
+        
       responses:
         200:
           description: Song details
@@ -38,8 +55,125 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Song'
+        400:
+          description: Bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Bad request"
+        404:
+          description: Not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Song not found"
+        
+        500:
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal server error"
+                
+  
 
-  /api/groups:
+  /new_song:
+    post:
+      summary: Create a new song
+      requestBody:
+        description: Song details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewSongRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uuid
+        '400':
+          description: Bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Bad request"
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal server error"
+    
+  /edit_song:
+    post:
+      summary: Edit a song
+      requestBody:
+        description: Song details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditSongRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uuid
+        '400':
+          description: Bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Bad request"
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal server error"
+
+
+  /delete_song:
+    delete:
+      summary: Delete a song
+      parameters:
+        - in: query
+          name: group_name
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: song_name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uuid
+        '400':
+          description: Bad request
+
+
+          
+
+  /groups/all:
     get:
       summary: Get all groups
       responses:
@@ -52,41 +186,67 @@ paths:
                 items:
                   $ref: '#/components/schemas/Group'
 
-  /api/groups/{group_id}:
-    get:
-      summary: Get a group by ID
-      parameters:
-        - in: path
-          name: group_id
-          required: true
-          schema:
-            type: integer
-      responses:
-        200:
-          description: Group details
+        404:
+          description: Not found
           content:
-            application/json:
+            text/plain:
               schema:
-                $ref: '#/components/schemas/Group'
+                type: string
+                example: "No groups found"
 
-  /api/groups/{group_id}/songs:
+
+  /groups/songs:
     get:
-      summary: Get songs for a group
+      summary: Get all songs of a group
       parameters:
-        - in: path
-          name: group_id
+        - in: query
+          name: group_name
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         200:
-          description: List of songs for the group
+          description: List of songs
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Song'
+        404:
+          description: Not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "No songs found"
+
+  /groups/new_group:
+    post:
+      summary: Create a new group
+      requestBody:
+        description: Group details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewGroupRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uuid
+        '400':
+          description: Bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Bad request"
+
+
 
 components:
   schemas:
@@ -94,12 +254,16 @@ components:
       type: object
       properties:
         song_id:
-          type: integer
+          type: string
+          format: uuid
         group_id:
-          type: integer
+          type: string
+          format: uuid
         release_date:
           type: string
           format: date
+          example: "2015-06-13"
+          pattern: "YYYY-MM-DD"
         song_name:
           type: string
         song_text:
@@ -107,10 +271,62 @@ components:
         link:
           type: string
 
+
     Group:
       type: object
       properties:
         group_id:
-          type: integer
+          type: string
+          format: uuid
         group_name:
           type: string
+
+
+    NewSongRequest:
+      type: object
+      properties:
+        song_name:
+          type: string
+        group_name:
+          type: string
+        release_date:
+          type: string
+          format: date
+          example: "2015-06-13"
+          pattern: "YYYY-MM-DD"
+        song_text:
+          type: string
+        link:
+          type: string
+      required:
+        - song_name
+        - group_name
+
+    NewGroupRequest:
+      type: object
+      properties:
+        group_name:
+          type: string
+      required:
+        - group_name
+
+
+    EditSongRequest:
+      type: object
+      properties:
+        song_name:
+          type: string
+        group_name:
+          type: string
+        release_date:
+          type: string
+          format: date
+          example: "2015-06-13"
+          pattern: "YYYY-MM-DD"
+        song_text:
+          type: string
+        link:
+          type: string
+      required:
+        - song_name
+        - group_name

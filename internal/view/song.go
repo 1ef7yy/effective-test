@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 func (v *view) GetSong(log logger.Logger, w http.ResponseWriter, r *http.Request) {
 
-	song := r.URL.Query().Get("song")
-	group := r.URL.Query().Get("group")
+	song := r.URL.Query().Get("song_name")
+	group := r.URL.Query().Get("group_name")
 	verse_offset, err := strconv.Atoi(r.URL.Query().Get("verse_offset"))
 
 	if err != nil {
@@ -36,8 +35,8 @@ func (v *view) GetSong(log logger.Logger, w http.ResponseWriter, r *http.Request
 	}
 
 	if group == "" || song == "" {
-		log.Error(err.Error())
 		httpResponse := errors.NewHTTPError(400, "Bad request, missing group or song")
+		log.Error(httpResponse.Error())
 		w.WriteHeader(httpResponse.Status())
 		fmt.Fprintf(w, httpResponse.Message())
 		return
@@ -49,8 +48,6 @@ func (v *view) GetSong(log logger.Logger, w http.ResponseWriter, r *http.Request
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-
-	fmt.Printf("Song: %v\n", Song)
 
 	if apierr != nil {
 		log.Error(apierr.Error())
@@ -102,30 +99,14 @@ func (v *view) NewSong(log logger.Logger, w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if data.GroupName == "" || data.SongName == "" || data.SongText == "" || data.Link == "" || data.ReleaseDate == "" {
+	if !data.IsValid() {
 		log.Error("Bad request, missing required field(s)")
 		httpResponse := errors.NewHTTPError(400, "Bad request, missing required field(s)")
 		w.WriteHeader(httpResponse.Status())
 		return
 	}
 
-	formatted_date, err := time.Parse("2006-01-02", data.ReleaseDate)
-
-	if err != nil {
-		log.Error(fmt.Sprintf("Error parsing release date: %s", err.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	formatted_data := models.NewSongFormattedReq{
-		GroupName:   data.GroupName,
-		SongName:    data.SongName,
-		ReleaseDate: formatted_date,
-		SongText:    data.SongText,
-		Link:        data.Link,
-	}
-
-	songID, apierr := v.domain.NewSong(formatted_data)
+	songID, apierr := v.domain.NewSong(data)
 
 	if apierr != nil {
 		log.Error(apierr.Error())
@@ -134,9 +115,8 @@ func (v *view) NewSong(log logger.Logger, w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Add("Location", songID)
 	w.WriteHeader(http.StatusCreated)
-
+	w.Write([]byte(songID))
 }
 
 func (v *view) EditSong(log logger.Logger, w http.ResponseWriter, r *http.Request) {
@@ -149,32 +129,14 @@ func (v *view) EditSong(log logger.Logger, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if data.GroupName == "" || data.SongName == "" || data.SongText == "" || data.Link == "" || data.ReleaseDate.IsZero() {
-		httpResponse := errors.NewHTTPError(400, "Bad request, missing required field(s)")
-		w.WriteHeader(httpResponse.Status())
-		fmt.Fprintf(w, httpResponse.Message())
-		return
-	}
-}
-
-func (v *view) DeleteSong(log logger.Logger, w http.ResponseWriter, r *http.Request) {
-
-	var data models.DeleteSongReq
-
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		log.Error(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if data.GroupName == "" || data.SongName == "" {
+	if !data.IsValid() {
 		httpResponse := errors.NewHTTPError(400, "Bad request, missing required field(s)")
 		w.WriteHeader(httpResponse.Status())
 		fmt.Fprintf(w, httpResponse.Message())
 		return
 	}
 
-	songID, apierr := v.domain.DeleteSong(data)
+	songID, apierr := v.domain.EditSong(data)
 
 	if apierr != nil {
 		log.Error(apierr.Error())
@@ -190,5 +152,31 @@ func (v *view) DeleteSong(log logger.Logger, w http.ResponseWriter, r *http.Requ
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(songID))
+}
+
+func (v *view) DeleteSong(log logger.Logger, w http.ResponseWriter, r *http.Request) {
+
+	var data models.DeleteSongReq
+
+	data.GroupName = r.URL.Query().Get("group_name")
+	data.SongName = r.URL.Query().Get("song_name")
+
+	if !data.IsValid() {
+		httpResponse := errors.NewHTTPError(400, "Bad request, missing required field(s)")
+		w.WriteHeader(httpResponse.Status())
+		fmt.Fprintf(w, httpResponse.Message())
+		return
+	}
+
+	_, apierr := v.domain.DeleteSong(data)
+
+	if apierr != nil {
+		log.Error(apierr.Error())
+		w.WriteHeader(apierr.Status())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 }
