@@ -11,7 +11,7 @@ func (d *domain) NewGroup(data models.NewGroupReq) (string, errors.APIError) {
 	groupID, err := d.pg.NewGroup(context.Background(), data)
 
 	if err != nil {
-		d.pg.Log.Error(err.Error())
+		d.log.Error(err.Error())
 		return "", errors.NewHTTPError(500, err.Error())
 	}
 

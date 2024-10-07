@@ -10,11 +10,11 @@ func (v *Router) Songs() http.Handler {
 
 	log := logger.NewLogger(nil)
 
-	apimux.Handle("GET /songs", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	apimux.Handle("GET /all", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		v.View.GetAllSongs(log, w, r)
 	}))
 
-	apimux.Handle("GET /song", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	apimux.Handle("GET /get_song", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		v.View.GetSong(log, w, r)
 	}))
 
@@ -24,6 +24,10 @@ func (v *Router) Songs() http.Handler {
 
 	apimux.Handle("POST /edit_song", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		v.View.EditSong(log, w, r)
+	}))
+
+	apimux.Handle("DELETE /delete_song", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		v.View.DeleteSong(log, w, r)
 	}))
 
 	return http.StripPrefix("/api/songs", apimux)
