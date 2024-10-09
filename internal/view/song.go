@@ -11,7 +11,6 @@ import (
 )
 
 func (v *view) GetSong(log logger.Logger, w http.ResponseWriter, r *http.Request) {
-
 	song := r.URL.Query().Get("song_name")
 	group := r.URL.Query().Get("group_name")
 	verse_offset, err := strconv.Atoi(r.URL.Query().Get("verse_offset"))
@@ -69,7 +68,6 @@ func (v *view) GetSong(log logger.Logger, w http.ResponseWriter, r *http.Request
 }
 
 func (v *view) GetAllSongs(log logger.Logger, w http.ResponseWriter, r *http.Request) {
-
 	songs, apierr := v.domain.GetAllSongs()
 	if apierr != nil {
 		log.Error(apierr.Error())

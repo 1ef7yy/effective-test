@@ -71,7 +71,6 @@ func (v *view) GetGroupSongs(log logger.Logger, w http.ResponseWriter, r *http.R
 }
 
 func (v *view) GetAllGroups(log logger.Logger, w http.ResponseWriter, r *http.Request) {
-
 	groups, apierr := v.domain.GetAllGroups()
 	if apierr != nil {
 		log.Error(apierr.Error())
@@ -90,7 +89,6 @@ func (v *view) GetAllGroups(log logger.Logger, w http.ResponseWriter, r *http.Re
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
-
 }
 
 func (v *view) EditGroup(log logger.Logger, w http.ResponseWriter, r *http.Request) {
@@ -119,5 +117,4 @@ func (v *view) EditGroup(log logger.Logger, w http.ResponseWriter, r *http.Reque
 	w.Header().Add("Content-Type", "application/json")
 
 	w.WriteHeader(http.StatusOK)
-
 }

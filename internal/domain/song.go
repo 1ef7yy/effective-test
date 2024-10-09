@@ -8,26 +8,6 @@ import (
 
 func (d *domain) GetSong(group, song string, verse_offset, verse_limit int) (models.SongDTO, errors.APIError) {
 
-	// cached_song, err := d.redis.GetSong(group, song)
-
-	// if err != nil {
-	// 	return models.SongDTO{}, err
-	// }
-
-	// if cached_song.SongID != "" {
-
-	// 	Song := models.SongDTO{
-	// 		SongID:      cached_song.SongID,
-	// 		GroupID:     cached_song.GroupID,
-	// 		SongName:    cached_song.SongName,
-	// 		ReleaseDate: cached_song.ReleaseDate,
-	// 		SongText:    cached_song.SongText,
-	// 		Link:        cached_song.Link,
-	// 	}
-
-	// 	return Song, nil
-	// }
-
 	Song, err := d.pg.GetSong(group, song)
 
 	if err != nil {
